@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EAS3010 Field Trip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">EAS 3010 · Ithaca → Capital District → Ithaca</div>
+    <h1>EAS3010 Field Trip</h1>
+    <p class="sub">Arrival and departure times follow from each day's start time, the drive times, and how long you stay at each stop. Drive times are Valhalla (OpenStreetMap) timings of your saved routes. They assume posted speeds, so long highway legs run about 10% over Google. Type over any of them to change it.</p>
+    <div class="legend">
+      <span><span class="chip est">OSM</span> routed drive time</span>
+      <span><span class="chip goog">edited</span> time you entered</span>
+      <span>Times accept <code>73</code>, <code>1:13</code> or <code>1h 13m</code></span>
+    </div>
+    <div class="status" id="status">Loading…</div>
+  </header>
+  <main id="days" class="wrap" style="gap:28px"></main>
+  <footer>
+    <span>Distances are measured along the routes in the My Maps export. Drive times assume no traffic, fuel stops or loading the vans.</span>
+    <button id="resetAll" type="button">Reset all to defaults</button>
+    <span id="confirmReset" hidden>Clear every time and note? <button id="resetYes" type="button">Yes, reset</button> <button id="resetNo" type="button">Cancel</button></span>
+  </footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+{
+ "source": "EAS3010 field trip.kml",
+ "days": [
+  {
+   "title": "Day 1",
+   "stops": [
+    {
+     "name": "Snee Hall",
+     "lat": 42.4437223,
+     "lon": -76.4853336
+    },
+    {
+     "name": "Brauer Geologic Field Station",
+     "lat": 42.5424194,
+     "lon": -73.8662068
+    }
+   ],
+   "legs": [
+    {
+     "km": 258.9,
+     "minutes": 200
+    }
+   ]
+  },
+  {
+   "title": "Day 2",
+   "stops": [
+    {
+     "name": "Brauer Geologic Field Station",
+     "lat": 42.5424194,
+     "lon": -73.8662068
+    },
+    {
+     "name": "Lester Park stromatolites",
+     "lat": 43.095188,
+     "lon": -73.8469662
+    },
+    {
+     "name": "Saratoga Spa State Park",
+     "lat": 43.0540852,
+     "lon": -73.7979417
+    },
+    {
+     "name": "Stark's Knob",
+     "lat": 43.1181213,
+     "lon": -73.5866957
+    },
+    {
+     "name": "Albany clay",
+     "lat": 42.82502,
+     "lon": -73.6606266
+    },
+    {
+     "name": "Cohoes Falls overlook park",
+     "lat": 42.7852851,
+     "lon": -73.7110193
+    },
+    {
+     "name": "Brauer Geologic Field Station",
+     "lat": 42.5424194,
+     "lon": -73.8662068
+    }
+   ],
+   "legs": [
+    {
+     "km": 77.1,
+     "minutes": 64
+    },
+    {
+     "km": 8.4,
+     "minutes": 12
+    },
+    {
+     "km": 22.5,
+     "minutes": 33
+    },
+    {
+     "km": 36.6,
+     "minutes": 38
+    },
+    {
+     "km": 15.5,
+     "minutes": 21
+    },
+    {
+     "km": 37.7,
+     "minutes": 37
+    }
+   ]
+  },
+  {
+   "title": "Day 3",
+   "stops": [
+    {
+     "name": "Brauer Geologic Field Station",
+     "lat": 42.5424194,
+     "lon": -73.8662068
+    },
+    {
+     "name": "Abandoned quarry",
+     "lat": 42.5580398,
+     "lon": -73.8624161
+    },
+    {
+     "name": "Joralemon Memorial Park",
+     "lat": 42.4729698,
+     "lon": -73.8675074
+    },
+    {
+     "name": "Indian Ladder Trail",
+     "lat": 42.6549251,
+     "lon": -74.0179096
+    },
+    {
+     "name": "Secret Caverns",
+     "lat": 42.7094777,
+     "lon": -74.3917474
+    },
+    {
+     "name": "Snee Hall",
+     "lat": 42.4437223,
+     "lon": -76.4853336
+    }
+   ],
+   "legs": [
+    {
+     "km": 1.8,
+     "minutes": 2
+    },
+    {
+     "km": 10.0,
+     "minutes": 12
+    },
+    {
+     "km": 31.2,
+     "minutes": 35
+    },
+    {
+     "km": 39.9,
+     "minutes": 42
+    },
+    {
+     "km": 205.8,
+     "minutes": 151
+    }
+   ]
+  }
+ ]
+}
