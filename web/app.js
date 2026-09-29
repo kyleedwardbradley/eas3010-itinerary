@@ -3,10 +3,14 @@
 // per-field edits (/api/edits/<kind>/<key>): start by day, dwell and notes by
 // stop id, drive by leg key "<from id>><to id>".
 
-const DEFAULT_DWELL = 30, DEFAULT_START = "08:00";
+// Rest stops have no location: they split the drive between the places either
+// side. "before" edits hold the driving minutes since the previous stop.
+
+const API_VERSION = 3;  // must match server.py
+const DEFAULT_DWELL = 30, DEFAULT_REST = 15, DEFAULT_START = "08:00";
 let DAYS = [];
-let state = {start: {}, dwell: {}, drive: {}, notes: {}};
-// adding: {day, q, results, pick, name, after, busy, error}; removing: stop id
+let state = {start: {}, dwell: {}, drive: {}, notes: {}, before: {}};
+// adding: {day, kind, q, results, pick, name, after, busy, error}; removing: stop id
 const ui = {adding: null, removing: null};
 
 const fmt = m => { m = Math.round(m); const h = Math.floor(m / 60), r = m % 60; return h ? `${h}h ${String(r).padStart(2, "0")}m` : `${r}m`; };
@@ -48,12 +52,27 @@ function stopControls(s, i, n) {
     <button type="button" class="icon" data-remove="${s.id}" aria-label="Remove ${esc(s.name)}" title="Remove">✕</button></span>`;
 }
 
+function whereSelect(day, a) {
+  const opts = [`<option value="" ${a.after == null ? "selected" : ""}>At the start of the day</option>`]
+    .concat(day.stops.map(s => `<option value="${s.id}" ${a.after === s.id ? "selected" : ""}>After ${esc(s.name)}</option>`));
+  return `<label class="lbl" for="aa-${day.day}">Where</label><select id="aa-${day.day}">${opts.join("")}</select>`;
+}
+
 function addForm(day) {
   const a = ui.adding;
-  if (!a || a.day !== day.day) {
-    return `<div class="addstop"><button type="button" class="addbtn" data-add="${day.day}">+ Add stop</button></div>`;
-  }
   const d = day.day;
+  if (!a || a.day !== d) {
+    return `<div class="addstop"><button type="button" class="addbtn" data-add="${d}">+ Add stop</button>
+      <button type="button" class="addbtn" data-add-rest="${d}">+ Add rest stop</button></div>`;
+  }
+  if (a.kind === "rest") {
+    return `<div class="addstop open"><div class="confirmrow">
+      <label class="lbl" for="an-${d}">Rest stop name</label><input id="an-${d}" class="q" value="${esc(a.name)}">
+      ${whereSelect(day, a)}
+      <button type="button" class="primary" data-confirm="${d}" ${a.busy ? "disabled" : ""}>Add rest stop</button>
+      <button type="button" data-cancel>Cancel</button></div>
+      ${a.error ? `<p class="msg err">${esc(a.error)}</p>` : ""}</div>`;
+  }
   let html = `<div class="addstop open">
     <form class="findrow" data-find="${d}">
       <label for="aq-${d}" class="lbl">Address or place</label>
@@ -67,11 +86,9 @@ function addForm(day) {
       <span><b>${esc(r.name)}</b><small>${esc(r.label)}</small></span></label></li>`).join("")}</ul>`;
   }
   if (a.pick != null) {
-    const opts = [`<option value="" ${a.after == null ? "selected" : ""}>At the start of the day</option>`]
-      .concat(day.stops.map(s => `<option value="${s.id}" ${a.after === s.id ? "selected" : ""}>After ${esc(s.name)}</option>`));
     html += `<div class="confirmrow">
       <label class="lbl" for="an-${d}">Name</label><input id="an-${d}" class="q" value="${esc(a.name)}">
-      <label class="lbl" for="aa-${d}">Where</label><select id="aa-${d}">${opts.join("")}</select>
+      ${whereSelect(day, a)}
       <button type="button" class="primary" data-confirm="${d}" ${a.busy ? "disabled" : ""}>Check drive times and add</button></div>`;
   }
   if (a.busy) html += `<p class="msg">${esc(a.busy)}</p>`;
@@ -85,9 +102,32 @@ function render() {
   root.innerHTML = DAYS.map(day => {
     const d = day.day, n = day.stops.length;
     const start = state.start[d] || DEFAULT_START;
+    const places = day.stops.filter(s => s.kind === "place");
+    const legFrom = Object.fromEntries(day.legs.map(l => [l.from, l]));
     let t = toMin(start), drive = 0, dwellTot = 0, rows = "", noRoute = 0;
+    let cur = null;  // the drive in progress: {total, used, restsLeft}
     day.stops.forEach((s, i) => {
-      const first = i === 0, last = i === n - 1;
+      if (s.kind === "rest") {
+        let beforeCell = "", over = false;
+        if (cur) {
+          const even = Math.max(0, Math.round((cur.total - cur.used) / (cur.restsLeft + 1)));
+          const before = state.before[s.id] ?? even;
+          t += before; cur.used += before; cur.restsLeft--;
+          over = cur.used > cur.total;
+          beforeCell = `<label class="dwell" for="bf-${s.id}">after <input class="t" id="bf-${s.id}" data-before="${s.id}" value="${fmt(before)}" aria-label="Driving before ${esc(s.name)}"> driving</label>`;
+        }
+        const dwell = state.dwell[s.id] ?? DEFAULT_REST;
+        dwellTot += dwell;
+        rows += `<li class="stop rest"><div class="times">${clock(t)}<small>to ${clock(t + dwell)}</small></div>
+          <div><div class="namerow"><div class="name"><span class="chip rest">rest</span> ${esc(s.name)}</div>${stopControls(s, i, n)}</div>
+          ${over ? `<div class="msg err">Placed past the end of this drive</div>` : ""}
+          <textarea class="note" id="nt-${s.id}" data-note="${s.id}" rows="1" placeholder="Notes">${esc(state.notes[s.id] || "")}</textarea></div>
+          <div class="restcells">${beforeCell}<label class="dwell" for="dw-${s.id}">stop <input class="t" id="dw-${s.id}" data-dwell="${s.id}" value="${fmt(dwell)}" aria-label="Time at ${esc(s.name)}"></label></div></li>`;
+        t += dwell;
+        return;
+      }
+      if (cur) { t += Math.max(0, cur.total - cur.used); cur = null; }
+      const first = s === places[0], last = s === places[places.length - 1];
       const dwell = first || last ? 0 : (state.dwell[s.id] ?? DEFAULT_DWELL);
       const arr = t, dep = t + dwell;
       dwellTot += dwell;
@@ -100,25 +140,28 @@ function render() {
         ${s.address ? `<div class="addr">${esc(s.address)}</div>` : ""}
         <textarea class="note" id="nt-${s.id}" data-note="${s.id}" rows="1" placeholder="Notes">${esc(state.notes[s.id] || "")}</textarea></div>${dwellCell}</li>`;
       t = dep;
-      if (!last) {
-        const leg = day.legs[i];
+      const leg = legFrom[s.id];
+      if (leg) {
+        const next = places[places.indexOf(s) + 1];
         const edited = state.drive[leg.key];
         const mins = edited ?? leg.minutes;
-        if (mins == null) noRoute++; else { drive += mins; t += mins; }
+        if (mins == null) noRoute++; else drive += mins;
+        const restsLeft = day.stops.slice(i + 1, day.stops.indexOf(next)).length;
+        cur = {total: mins ?? 0, used: 0, restsLeft};
         const chip = edited != null
           ? `<span class="chip goog">edited</span>${leg.minutes != null ? `<button class="reset" type="button" data-unset="${leg.key}">use OSM (${fmt(leg.minutes)})</button>` : ""}`
           : leg.minutes != null ? `<span class="chip est">OSM</span>` : `<span class="chip warn" title="${esc(leg.error || "")}">no route</span>`;
         rows += `<li class="leg"><div class="line"><span></span></div><div class="legbody">
-          <label for="dr-${leg.key}" style="display:flex;align-items:center;gap:6px">drive <input class="t" id="dr-${leg.key}" data-drive="${leg.key}" value="${mins != null ? fmt(mins) : ""}" placeholder="?" aria-label="Drive time to ${esc(day.stops[i + 1].name)}"></label>
+          <label for="dr-${leg.key}" style="display:flex;align-items:center;gap:6px">drive <input class="t" id="dr-${leg.key}" data-drive="${leg.key}" value="${mins != null ? fmt(mins) : ""}" placeholder="?" aria-label="Drive time to ${esc(next.name)}"></label>
           ${chip}
           ${leg.km != null ? `<span class="km">${leg.km.toFixed(1)} km · ${(leg.km * 0.621371).toFixed(1)} mi</span>` : ""}
-          <a href="${dirUrl(s, day.stops[i + 1])}" target="_blank" rel="noopener">Open route ↗</a></div></li>`;
+          <a href="${dirUrl(s, next)}" target="_blank" rel="noopener">Open route ↗</a></div></li>`;
       }
     });
     const km = day.legs.reduce((a, l) => a + (l.km || 0), 0);
     return `<section class="day" aria-labelledby="h-${d}">
       <div class="dayhead"><div><h2 id="h-${d}">${esc(day.title)}</h2>
-        <div class="route">${n} stop${n === 1 ? "" : "s"} · ${km.toFixed(0)} km${n > 1 ? ` · <a href="${dayUrl(day.stops)}" target="_blank" rel="noopener">Whole day on a map ↗</a>` : ""}</div></div>
+        <div class="route">${places.length} stop${places.length === 1 ? "" : "s"}${n > places.length ? ` + ${n - places.length} rest` : ""} · ${km.toFixed(0)} km${places.length > 1 ? ` · <a href="${dayUrl(places)}" target="_blank" rel="noopener">Whole day on a map ↗</a>` : ""}</div></div>
         <label class="startbox" for="st-${d}">Leave at <input class="t" id="st-${d}" data-start="${d}" value="${start}" aria-label="${esc(day.title)} departure time"></label></div>
       <div class="totals"><span>Driving <b>${fmt(drive)}</b>${noRoute ? ` <span class="chip warn">${noRoute} leg${noRoute > 1 ? "s" : ""} missing</span>` : ""}</span><span>At stops <b>${fmt(dwellTot)}</b></span><span>Back / arrive <b>${clock(t)}</b></span><span>Day length <b>${fmt(t - toMin(start))}</b></span></div>
       <ol class="plan">${rows || `<li class="stop"><span class="endtag">No stops</span></li>`}</ol>
@@ -148,6 +191,7 @@ async function changeStops(method, path, body) {
   const res = await fetch(path, {method, headers: {"Content-Type": "application/json"}, body: body && JSON.stringify(body)});
   const out = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(out.error || `The server refused the change (${res.status}).`);
+  checkVersion(out.itinerary.version);
   DAYS = out.itinerary.days;
   state = out.edits;
 }
@@ -158,6 +202,19 @@ async function stopAction(method, path, body, busyText) {
   catch (e) { setStatus(e.message); }
   ui.removing = null;
   render();
+}
+
+// a rest stop most likely belongs in the day's longest drive
+function longestLegFrom(day) {
+  const legs = day.legs.filter(l => l.minutes != null);
+  if (!legs.length) return defaultAfter(day);
+  return legs.reduce((a, b) => (state.drive[b.key] ?? b.minutes) > (state.drive[a.key] ?? a.minutes) ? b : a).from;
+}
+
+function checkVersion(v) {
+  if (v === API_VERSION) return;
+  document.getElementById("days").innerHTML = "";
+  throw new Error("The server is running an older version of this app. Stop it with Ctrl-C, start it again with python3 server.py, then reload this page.");
 }
 
 function defaultAfter(day) {
@@ -173,7 +230,7 @@ document.addEventListener("change", e => {
     a.pick = +el.dataset.pick; a.name = r.name; a.error = null;
     render(); return;
   }
-  const kind = el.dataset.start != null ? "start" : el.dataset.dwell != null ? "dwell" : el.dataset.drive != null ? "drive" : null;
+  const kind = ["start", "dwell", "drive", "before"].find(k => el.dataset[k] != null);
   if (!kind) return;
   const key = el.dataset[kind];
   const v = kind === "start" ? parseClock(el.value) : parseDur(el.value);
@@ -233,11 +290,27 @@ document.addEventListener("click", async e => {
   else if (ds.removeYes != null) stopAction("DELETE", `/api/stops/${ds.removeYes}`, undefined, "Removing…");
   else if (ds.add != null) {
     const day = DAYS.find(x => x.day === +ds.add);
-    ui.adding = {day: day.day, q: "", results: null, pick: null, name: "", after: defaultAfter(day), busy: null, error: null};
+    ui.adding = {day: day.day, kind: "place", q: "", results: null, pick: null, name: "", after: defaultAfter(day), busy: null, error: null};
     render();
     document.getElementById(`aq-${day.day}`)?.focus();
   }
+  else if (ds.addRest != null) {
+    const day = DAYS.find(x => x.day === +ds.addRest);
+    ui.adding = {day: day.day, kind: "rest", name: "Rest stop", after: longestLegFrom(day), busy: null, error: null};
+    render();
+    document.getElementById(`an-${day.day}`)?.select();
+  }
   else if (ds.cancel != null) { ui.adding = null; render(); }
+  else if (ds.confirm != null && ui.adding.kind === "rest") {
+    const a = ui.adding;
+    if (!a.name.trim()) { a.error = "Give the rest stop a name."; render(); return; }
+    try {
+      await changeStops("POST", "/api/stops", {day: a.day, kind: "rest", after: a.after, name: a.name.trim()});
+      ui.adding = null;
+      setStatus("Rest stop added");
+    } catch (err) { a.error = err.message; }
+    render();
+  }
   else if (ds.confirm != null) {
     const a = ui.adding, r = a.results[a.pick];
     if (!a.name.trim()) { a.error = "Give the stop a name."; render(); return; }
@@ -256,7 +329,7 @@ const conf = document.getElementById("confirmReset"), resetBtn = document.getEle
 resetBtn.onclick = () => { conf.hidden = false; resetBtn.hidden = true; };
 document.getElementById("resetNo").onclick = () => { conf.hidden = true; resetBtn.hidden = false; };
 document.getElementById("resetYes").onclick = () => {
-  state = {start: {}, dwell: {}, drive: {}, notes: {}};
+  state = {start: {}, dwell: {}, drive: {}, notes: {}, before: {}};
   conf.hidden = true; resetBtn.hidden = false;
   render(); send("DELETE", "/api/edits");
 };
@@ -264,11 +337,12 @@ document.getElementById("resetYes").onclick = () => {
 (async () => {
   try {
     const [it, edits] = await Promise.all([fetch("/api/itinerary").then(r => r.json()), fetch("/api/edits").then(r => r.json())]);
+    checkVersion(it.version);
     DAYS = it.days;
-    state = edits;
+    state = {...edits, before: edits.before || {}};
     render();
     setStatus("Saved");
-  } catch {
-    setStatus("Couldn't load the itinerary. Start it with: python3 server.py");
+  } catch (e) {
+    setStatus(e.message.includes("older version") ? e.message : "Couldn't load the itinerary. Start it with: python3 server.py");
   }
 })();

@@ -12,8 +12,12 @@ New stops are found with Nominatim (the OpenStreetMap geocoder) and are only
 added once Valhalla (the OpenStreetMap router) can drive to them from the
 neighbouring stops. Every leg time is cached by its end coordinates, so the
 times traced along the KML routes come back if a stop order is restored.
+
+A rest stop has a name but no location. It sits inside the drive between the
+places either side of it, so legs run between places and skip rest stops.
 """
 import argparse
+import contextlib
 import json
 import secrets
 import sqlite3
@@ -29,7 +33,8 @@ ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
 ITINERARY = ROOT / "data" / "itinerary.json"
 DB = ROOT / "data" / "itinerary.sqlite"
-EDIT_KINDS = {"start", "dwell", "drive", "notes"}
+EDIT_KINDS = {"start", "dwell", "drive", "notes", "before"}
+API_VERSION = 3  # web/app.js refuses to edit when this differs
 
 NOMINATIM = "https://nominatim.openstreetmap.org/search"
 VALHALLA = "https://valhalla1.openstreetmap.de"
@@ -42,7 +47,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS days(day INTEGER PRIMARY KEY, title TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS stops(
     id TEXT PRIMARY KEY, day INTEGER NOT NULL, pos REAL NOT NULL,
-    name TEXT NOT NULL, address TEXT, lat REAL NOT NULL, lon REAL NOT NULL);
+    kind TEXT NOT NULL DEFAULT 'place', name TEXT NOT NULL, address TEXT, lat REAL, lon REAL);
 CREATE TABLE IF NOT EXISTS legs(
     pair TEXT PRIMARY KEY, km REAL NOT NULL, minutes REAL NOT NULL, source TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS edits(
@@ -111,11 +116,37 @@ def pair_key(a, b):
     return f"{a['lat']:.5f},{a['lon']:.5f}>{b['lat']:.5f},{b['lon']:.5f}"
 
 
+def migrate(con):
+    """Bring an older database up to date, keeping a copy of it first."""
+    cols = [r[1] for r in con.execute("PRAGMA table_info(stops)")]
+    if "kind" in cols:
+        return
+    backup = DB.with_name(f"{DB.stem}.before-rest-stops.{time.strftime('%Y%m%d-%H%M%S')}.sqlite")
+    with contextlib.closing(sqlite3.connect(backup)) as dst:
+        con.backup(dst)
+    con.executescript("""
+        BEGIN;
+        CREATE TABLE stops_new(
+            id TEXT PRIMARY KEY, day INTEGER NOT NULL, pos REAL NOT NULL,
+            kind TEXT NOT NULL DEFAULT 'place', name TEXT NOT NULL, address TEXT, lat REAL, lon REAL);
+        INSERT INTO stops_new(id, day, pos, kind, name, address, lat, lon)
+            SELECT id, day, pos, 'place', name, address, lat, lon FROM stops;
+        DROP TABLE stops;
+        ALTER TABLE stops_new RENAME TO stops;
+        COMMIT;""")
+    print(f"Updated the database for rest stops; the old one is saved as {backup.name}")
+
+
+@contextlib.contextmanager
 def connect():
     con = sqlite3.connect(DB)
     con.row_factory = sqlite3.Row
-    con.executescript(SCHEMA)
-    return con
+    try:
+        con.executescript(SCHEMA)
+        yield con
+        con.commit()
+    finally:
+        con.close()
 
 
 def seed(con):
@@ -128,8 +159,8 @@ def seed(con):
         ids = []
         for i, s in enumerate(day["stops"]):
             ids.append(secrets.token_hex(4))
-            con.execute("INSERT INTO stops VALUES(?,?,?,?,?,?,?)",
-                        (ids[-1], d, i, s["name"], None, s["lat"], s["lon"]))
+            con.execute("INSERT INTO stops(id, day, pos, name, lat, lon) VALUES(?,?,?,?,?,?)",
+                        (ids[-1], d, i, s["name"], s["lat"], s["lon"]))
         for i, leg in enumerate(day["legs"]):
             con.execute("INSERT OR IGNORE INTO legs VALUES(?,?,?,?)",
                         (pair_key(day["stops"][i], day["stops"][i + 1]), leg["km"], leg["minutes"], "route line"))
@@ -149,23 +180,24 @@ def leg_for(con, a, b):
     key = pair_key(a, b)
     row = con.execute("SELECT * FROM legs WHERE pair=?", (key,)).fetchone()
     if row:
-        return {"key": f"{a['id']}>{b['id']}", "km": row["km"], "minutes": row["minutes"], "source": row["source"]}
+        return {"key": f"{a['id']}>{b['id']}", "from": a["id"], "km": row["km"], "minutes": row["minutes"], "source": row["source"]}
     try:
         minutes, km = route(a, b)
     except RouteError as e:
-        return {"key": f"{a['id']}>{b['id']}", "km": None, "minutes": None, "source": "none", "error": str(e)}
+        return {"key": f"{a['id']}>{b['id']}", "from": a["id"], "km": None, "minutes": None, "source": "none", "error": str(e)}
     con.execute("INSERT OR REPLACE INTO legs VALUES(?,?,?,?)", (key, round(km, 1), round(minutes), "routed"))
-    return {"key": f"{a['id']}>{b['id']}", "km": round(km, 1), "minutes": round(minutes), "source": "routed"}
+    return {"key": f"{a['id']}>{b['id']}", "from": a["id"], "km": round(km, 1), "minutes": round(minutes), "source": "routed"}
 
 
 def itinerary(con):
     days = []
     for d in con.execute("SELECT * FROM days ORDER BY day").fetchall():
         stops = stops_of(con, d["day"])
-        legs = [leg_for(con, stops[i], stops[i + 1]) for i in range(len(stops) - 1)]
+        places = [s for s in stops if s["kind"] == "place"]
+        legs = [leg_for(con, places[i], places[i + 1]) for i in range(len(places) - 1)]
         days.append({"day": d["day"], "title": d["title"], "stops": stops, "legs": legs})
     con.commit()
-    return {"days": days}
+    return {"version": API_VERSION, "days": days}
 
 
 def read_edits(con):
@@ -178,7 +210,7 @@ def read_edits(con):
 def add_stop(con, body):
     day = int(body["day"])
     name = str(body.get("name") or "").strip()
-    new = {"lat": float(body["lat"]), "lon": float(body["lon"])}
+    rest = body.get("kind") == "rest"
     if not name:
         raise RouteError("give the stop a name")
     stops = stops_of(con, day)
@@ -190,8 +222,17 @@ def add_stop(con, body):
         if after not in ids:
             raise RouteError("the stop to insert after no longer exists")
         i = ids.index(after) + 1
-    prev = stops[i - 1] if i > 0 else None
-    nxt = stops[i] if i < len(stops) else None
+    if rest:
+        pos = (stops[i - 1]["pos"] + 0.5) if i > 0 else -0.5
+        con.execute("INSERT INTO stops(id, day, pos, kind, name) VALUES(?,?,?,?,?)",
+                    (secrets.token_hex(4), day, pos, "rest", name))
+        renumber(con, day)
+        return
+
+    new = {"lat": float(body["lat"]), "lon": float(body["lon"])}
+    # the places either side, skipping rest stops
+    prev = next((s for s in reversed(stops[:i]) if s["kind"] == "place"), None)
+    nxt = next((s for s in stops[i:] if s["kind"] == "place"), None)
 
     # confirm with the drive-time server before anything is written
     legs = []
@@ -205,10 +246,9 @@ def add_stop(con, body):
     except RouteError as e:
         raise RouteError(f"The drive-time server can't route to this address: {e}. Nothing was added.")
 
-    sid = secrets.token_hex(4)
-    pos = (prev["pos"] + 0.5) if prev else -0.5
-    con.execute("INSERT INTO stops VALUES(?,?,?,?,?,?,?)",
-                (sid, day, pos, name, body.get("address"), new["lat"], new["lon"]))
+    pos = (stops[i - 1]["pos"] + 0.5) if i > 0 else -0.5
+    con.execute("INSERT INTO stops(id, day, pos, kind, name, address, lat, lon) VALUES(?,?,?,?,?,?,?,?)",
+                (secrets.token_hex(4), day, pos, "place", name, body.get("address"), new["lat"], new["lon"]))
     for a, b, (minutes, km) in legs:
         con.execute("INSERT OR REPLACE INTO legs VALUES(?,?,?,?)", (pair_key(a, b), round(km, 1), round(minutes), "routed"))
     renumber(con, day)
@@ -219,7 +259,7 @@ def remove_stop(con, sid):
     if not row:
         return
     con.execute("DELETE FROM stops WHERE id=?", (sid,))
-    con.execute("DELETE FROM edits WHERE kind IN ('dwell','notes') AND key=?", (sid,))
+    con.execute("DELETE FROM edits WHERE kind IN ('dwell','notes','before') AND key=?", (sid,))
     con.execute("DELETE FROM edits WHERE kind='drive' AND (key LIKE ? OR key LIKE ?)", (sid + ">%", "%>" + sid))
     renumber(con, row["day"])
 
@@ -337,10 +377,15 @@ class Handler(SimpleHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser(description="Serve the field trip itinerary.")
     ap.add_argument("--port", type=int, default=8010)
+    ap.add_argument("--db", help="database file (default data/itinerary.sqlite)")
     args = ap.parse_args()
+    if args.db:
+        global DB
+        DB = Path(args.db).resolve()
     with connect() as con:
+        migrate(con)
         seed(con)
-    print(f"Itinerary at http://localhost:{args.port}  (data in {DB.relative_to(ROOT)})")
+    print(f"Itinerary at http://localhost:{args.port}  (data in {DB.relative_to(ROOT) if DB.is_relative_to(ROOT) else DB})")
     ThreadingHTTPServer(("127.0.0.1", args.port), Handler).serve_forever()
 
 

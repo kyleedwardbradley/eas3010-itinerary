@@ -19,6 +19,10 @@ Use `--port` for a different port.
 - **Drive**: type over a leg's routed time to replace it; *use OSM* puts it back.
 - **Notes**: free text per stop, saved as you type.
 - **↑ ↓**: move a stop earlier or later in its day. **✕** removes it.
+- **+ Add rest stop**: a named break with no address, such as a highway rest
+  area. It sits inside the drive between the stops either side and splits
+  it: set how long you stop and how far into the drive it comes (default:
+  the drive split evenly). The drive time between the real stops is unchanged.
 - **+ Add stop**: look up an address with Nominatim (the OpenStreetMap
   geocoder), pick the match, name it and choose where it goes. It is added
   only after Valhalla has worked out the drive to it from the stop before and
@@ -26,7 +30,10 @@ Use `--port` for a different port.
 
 Everything lives in `data/itinerary.sqlite` (not committed): the stops, one
 row per edit, and every leg time fetched so far, cached by its end
-coordinates. Delete the file to start over from `data/itinerary.json`.
+coordinates. Delete the file to start over from `data/itinerary.json`. When an update
+changes the database layout, the server converts it on start and keeps a
+dated copy of the old file next to it. If the page says the server is out of
+date, restart `server.py`.
 
 ## Drive times
 
