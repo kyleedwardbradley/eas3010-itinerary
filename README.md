@@ -18,9 +18,15 @@ Use `--port` for a different port.
 - **At stop**: time spent at a stop (`45`, `1:15`, `1h 15m`). Defaults to 30 min.
 - **Drive**: type over a leg's routed time to replace it; *use OSM* puts it back.
 - **Notes**: free text per stop, saved as you type.
+- **↑ ↓**: move a stop earlier or later in its day. **✕** removes it.
+- **+ Add stop**: look up an address with Nominatim (the OpenStreetMap
+  geocoder), pick the match, name it and choose where it goes. It is added
+  only after Valhalla has worked out the drive to it from the stop before and
+  on to the stop after; if it can't, nothing changes.
 
-Edits live in `data/edits.sqlite` (not committed), one row per field.
-Delete the file to start over.
+Everything lives in `data/itinerary.sqlite` (not committed): the stops, one
+row per edit, and every leg time fetched so far, cached by its end
+coordinates. Delete the file to start over from `data/itinerary.json`.
 
 ## Drive times
 
@@ -33,5 +39,5 @@ Legs are measured along the KML route and timed by Valhalla, the public
 OpenStreetMap router, following the same line. Valhalla uses posted speeds,
 so long highway legs come out about 10% slower than Google.
 
-Edits are keyed by day and stop position, so if a rebuilt itinerary adds or
-reorders stops, check the at-stop and drive edits afterwards.
+The JSON is only read into an empty database, so a rebuilt itinerary takes
+effect after deleting `data/itinerary.sqlite` (which also clears edits).

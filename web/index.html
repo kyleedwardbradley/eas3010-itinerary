@@ -14,7 +14,7 @@
   <header>
     <div class="eyebrow">EAS 3010 · Ithaca → Capital District → Ithaca</div>
     <h1>EAS3010 Field Trip</h1>
-    <p class="sub">Arrival and departure times follow from each day's start time, the drive times, and how long you stay at each stop. Drive times are Valhalla (OpenStreetMap) timings of your saved routes. They assume posted speeds, so long highway legs run about 10% over Google. Type over any of them to change it.</p>
+    <p class="sub">Arrival and departure times follow from each day's start time, the drive times, and how long you stay at each stop. Drive times are Valhalla (OpenStreetMap) timings of your saved routes. They assume posted speeds, so long highway legs run about 10% over Google. Type over any of them to change it. Add, remove or reorder stops with the controls on each day.</p>
     <div class="legend">
       <span><span class="chip est">OSM</span> routed drive time</span>
       <span><span class="chip goog">edited</span> time you entered</span>
@@ -22,11 +22,11 @@
     </div>
     <div class="status" id="status">Loading…</div>
   </header>
-  <main id="days" class="wrap" style="gap:28px"></main>
+  <main id="days" class="wrap" style="gap:28px;width:100%"></main>
   <footer>
     <span>Distances are measured along the routes in the My Maps export. Drive times assume no traffic, fuel stops or loading the vans.</span>
-    <button id="resetAll" type="button">Reset all to defaults</button>
-    <span id="confirmReset" hidden>Clear every time and note? <button id="resetYes" type="button">Yes, reset</button> <button id="resetNo" type="button">Cancel</button></span>
+    <button id="resetAll" type="button">Reset times and notes</button>
+    <span id="confirmReset" hidden>Clear every time and note? The stops stay. <button id="resetYes" type="button">Yes, reset</button> <button id="resetNo" type="button">Cancel</button></span>
   </footer>
 </div>
 <script src="app.js"></script>
