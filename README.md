@@ -48,3 +48,13 @@ so long highway legs come out about 10% slower than Google.
 
 The JSON is only read into an empty database, so a rebuilt itinerary takes
 effect after deleting `data/itinerary.sqlite` (which also clears edits).
+
+## Publishing
+
+The GitHub Pages site is a read-only snapshot of the plan, served from `docs/`.
+After editing locally, update it with:
+
+    python3 tools/publish.py --push
+
+That copies the page into `docs/` with the current stops, times and notes in
+`docs/snapshot.json`, commits `docs/` and pushes. Notes are published too.

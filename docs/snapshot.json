@@ -1,0 +1,290 @@
+{
+ "published": "2026-09-29 10:45",
+ "itinerary": {
+  "version": 3,
+  "days": [
+   {
+    "day": 0,
+    "title": "Day 1",
+    "stops": [
+     {
+      "id": "c5a4d943",
+      "day": 0,
+      "pos": 0.0,
+      "kind": "place",
+      "name": "Snee Hall",
+      "address": null,
+      "lat": 42.4437223,
+      "lon": -76.4853336
+     },
+     {
+      "id": "6f308e6f",
+      "day": 0,
+      "pos": 1.0,
+      "kind": "rest",
+      "name": "Rest stop",
+      "address": null,
+      "lat": null,
+      "lon": null
+     },
+     {
+      "id": "aec03289",
+      "day": 0,
+      "pos": 2.0,
+      "kind": "place",
+      "name": "Brauer Geologic Field Station",
+      "address": null,
+      "lat": 42.5424194,
+      "lon": -73.8662068
+     }
+    ],
+    "legs": [
+     {
+      "key": "c5a4d943>aec03289",
+      "from": "c5a4d943",
+      "km": 258.9,
+      "minutes": 200.0,
+      "source": "route line"
+     }
+    ]
+   },
+   {
+    "day": 1,
+    "title": "Day 2",
+    "stops": [
+     {
+      "id": "05304f90",
+      "day": 1,
+      "pos": 0.0,
+      "kind": "place",
+      "name": "Brauer Geologic Field Station",
+      "address": null,
+      "lat": 42.5424194,
+      "lon": -73.8662068
+     },
+     {
+      "id": "7bdd2592",
+      "day": 1,
+      "pos": 1.0,
+      "kind": "place",
+      "name": "Lester Park stromatolites",
+      "address": null,
+      "lat": 43.095188,
+      "lon": -73.8469662
+     },
+     {
+      "id": "64a4814b",
+      "day": 1,
+      "pos": 2.0,
+      "kind": "place",
+      "name": "Saratoga Spa State Park",
+      "address": null,
+      "lat": 43.0540852,
+      "lon": -73.7979417
+     },
+     {
+      "id": "6cbf647f",
+      "day": 1,
+      "pos": 3.0,
+      "kind": "place",
+      "name": "Stark's Knob",
+      "address": null,
+      "lat": 43.1181213,
+      "lon": -73.5866957
+     },
+     {
+      "id": "90ec562b",
+      "day": 1,
+      "pos": 4.0,
+      "kind": "place",
+      "name": "Albany clay",
+      "address": null,
+      "lat": 42.82502,
+      "lon": -73.6606266
+     },
+     {
+      "id": "d1bccb2f",
+      "day": 1,
+      "pos": 5.0,
+      "kind": "place",
+      "name": "Cohoes Falls overlook park",
+      "address": null,
+      "lat": 42.7852851,
+      "lon": -73.7110193
+     },
+     {
+      "id": "a5ac2444",
+      "day": 1,
+      "pos": 6.0,
+      "kind": "place",
+      "name": "Brauer Geologic Field Station",
+      "address": null,
+      "lat": 42.5424194,
+      "lon": -73.8662068
+     }
+    ],
+    "legs": [
+     {
+      "key": "05304f90>7bdd2592",
+      "from": "05304f90",
+      "km": 77.1,
+      "minutes": 64.0,
+      "source": "route line"
+     },
+     {
+      "key": "7bdd2592>64a4814b",
+      "from": "7bdd2592",
+      "km": 8.4,
+      "minutes": 12.0,
+      "source": "route line"
+     },
+     {
+      "key": "64a4814b>6cbf647f",
+      "from": "64a4814b",
+      "km": 22.5,
+      "minutes": 33.0,
+      "source": "route line"
+     },
+     {
+      "key": "6cbf647f>90ec562b",
+      "from": "6cbf647f",
+      "km": 36.6,
+      "minutes": 38.0,
+      "source": "route line"
+     },
+     {
+      "key": "90ec562b>d1bccb2f",
+      "from": "90ec562b",
+      "km": 15.5,
+      "minutes": 21.0,
+      "source": "route line"
+     },
+     {
+      "key": "d1bccb2f>a5ac2444",
+      "from": "d1bccb2f",
+      "km": 37.7,
+      "minutes": 37.0,
+      "source": "route line"
+     }
+    ]
+   },
+   {
+    "day": 2,
+    "title": "Day 3",
+    "stops": [
+     {
+      "id": "67f0d751",
+      "day": 2,
+      "pos": 0.0,
+      "kind": "place",
+      "name": "Brauer Geologic Field Station",
+      "address": null,
+      "lat": 42.5424194,
+      "lon": -73.8662068
+     },
+     {
+      "id": "5eaff051",
+      "day": 2,
+      "pos": 1.0,
+      "kind": "place",
+      "name": "Abandoned quarry",
+      "address": null,
+      "lat": 42.5580398,
+      "lon": -73.8624161
+     },
+     {
+      "id": "95c98823",
+      "day": 2,
+      "pos": 2.0,
+      "kind": "place",
+      "name": "Indian Ladder Trail",
+      "address": null,
+      "lat": 42.6549251,
+      "lon": -74.0179096
+     },
+     {
+      "id": "2f4ff3ef",
+      "day": 2,
+      "pos": 3.0,
+      "kind": "place",
+      "name": "Secret Caverns",
+      "address": null,
+      "lat": 42.7094777,
+      "lon": -74.3917474
+     },
+     {
+      "id": "dd617033",
+      "day": 2,
+      "pos": 4.0,
+      "kind": "rest",
+      "name": "Rest stop",
+      "address": null,
+      "lat": null,
+      "lon": null
+     },
+     {
+      "id": "5fd9531e",
+      "day": 2,
+      "pos": 5.0,
+      "kind": "place",
+      "name": "Snee Hall",
+      "address": null,
+      "lat": 42.4437223,
+      "lon": -76.4853336
+     }
+    ],
+    "legs": [
+     {
+      "key": "67f0d751>5eaff051",
+      "from": "67f0d751",
+      "km": 1.8,
+      "minutes": 2.0,
+      "source": "route line"
+     },
+     {
+      "key": "5eaff051>95c98823",
+      "from": "5eaff051",
+      "km": 26.3,
+      "minutes": 27.0,
+      "source": "routed"
+     },
+     {
+      "key": "95c98823>2f4ff3ef",
+      "from": "95c98823",
+      "km": 39.9,
+      "minutes": 42.0,
+      "source": "route line"
+     },
+     {
+      "key": "2f4ff3ef>5fd9531e",
+      "from": "2f4ff3ef",
+      "km": 205.8,
+      "minutes": 151.0,
+      "source": "route line"
+     }
+    ]
+   }
+  ]
+ },
+ "edits": {
+  "before": {},
+  "start": {
+   "0": "15:30"
+  },
+  "dwell": {
+   "7bdd2592": 60,
+   "64a4814b": 90,
+   "6cbf647f": 120,
+   "90ec562b": 40,
+   "d1bccb2f": 40,
+   "5eaff051": 120,
+   "95c98823": 105,
+   "2f4ff3ef": 120
+  },
+  "drive": {},
+  "notes": {
+   "6cbf647f": "With lunch",
+   "2f4ff3ef": "Tours depart every hour on the hour"
+  }
+ }
+}
