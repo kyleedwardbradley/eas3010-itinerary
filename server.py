@@ -15,6 +15,10 @@ times traced along the KML routes come back if a stop order is restored.
 
 A rest stop has a name but no location. It sits inside the drive between the
 places either side of it, so legs run between places and skip rest stops.
+
+Each place shows a street address, found once by a Nominatim reverse lookup of
+its coordinates and cached like the legs. An "arrive" edit sets the time the
+group actually reached a stop; the times after it follow from that.
 """
 import argparse
 import contextlib
@@ -33,21 +37,23 @@ ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
 ITINERARY = ROOT / "data" / "itinerary.json"
 DB = ROOT / "data" / "itinerary.sqlite"
-EDIT_KINDS = {"start", "dwell", "drive", "notes", "before"}
-API_VERSION = 3  # web/app.js refuses to edit when this differs
+EDIT_KINDS = {"start", "dwell", "drive", "notes", "before", "arrive"}
+API_VERSION = 4  # web/app.js refuses to edit when this differs
 
-NOMINATIM = "https://nominatim.openstreetmap.org/search"
+NOMINATIM = "https://nominatim.openstreetmap.org"
 VALHALLA = "https://valhalla1.openstreetmap.de"
 UA = "eas3010-itinerary/1.0 (local field trip planner)"
 
 LOCK = threading.Lock()      # one change to the stop list at a time
 _last_call = {}              # host -> time of last request; both public servers ask for <= 1 req/s
+_no_street = set()           # spots whose reverse lookup failed this run; not retried until restart
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS days(day INTEGER PRIMARY KEY, title TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS stops(
     id TEXT PRIMARY KEY, day INTEGER NOT NULL, pos REAL NOT NULL,
     kind TEXT NOT NULL DEFAULT 'place', name TEXT NOT NULL, address TEXT, lat REAL, lon REAL);
+CREATE TABLE IF NOT EXISTS places(spot TEXT PRIMARY KEY, street TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS legs(
     pair TEXT PRIMARY KEY, km REAL NOT NULL, minutes REAL NOT NULL, source TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS edits(
@@ -100,20 +106,46 @@ def reachable(p):
     return bool(out and out[0].get("edges"))
 
 
-def geocode(q):
+def nominatim(path, params):
     polite("nominatim")
-    url = NOMINATIM + "?" + urllib.parse.urlencode({"q": q, "format": "jsonv2", "limit": 6})
+    url = f"{NOMINATIM}/{path}?" + urllib.parse.urlencode({**params, "format": "jsonv2", "addressdetails": 1})
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=30) as resp:
-        hits = json.load(resp)
+        return json.load(resp)
+
+
+def short_address(a):
+    """'514 College Avenue, Ithaca, NY 14853' from Nominatim address parts."""
+    street = " ".join(x for x in (a.get("house_number"), a.get("road")) if x)
+    town = next((a[k] for k in ("city", "village", "town", "hamlet", "suburb", "municipality") if a.get(k)), "")
+    for prefix in ("City of ", "Town of ", "Village of "):
+        town = town.removeprefix(prefix)
+    region = a.get("ISO3166-2-lvl4", "").split("-")[-1] or a.get("state", "")
+    region = " ".join(x for x in (region, a.get("postcode")) if x)
+    return ", ".join(x for x in (street, town, region) if x)
+
+
+def geocode(q):
+    hits = nominatim("search", {"q": q, "limit": 6})
     return [{"name": h.get("name") or h["display_name"].split(",")[0],
-             "label": h["display_name"], "lat": float(h["lat"]), "lon": float(h["lon"])} for h in hits]
+             "label": h["display_name"], "street": short_address(h.get("address", {})),
+             "lat": float(h["lat"]), "lon": float(h["lon"])} for h in hits]
+
+
+def reverse(p):
+    """Street address nearest p, or None."""
+    out = nominatim("reverse", {"lat": p["lat"], "lon": p["lon"], "zoom": 18})
+    return short_address(out.get("address", {})) or None
 
 
 # ---------------------------------------------------------------- database
 
+def spot_key(p):
+    return f"{p['lat']:.5f},{p['lon']:.5f}"
+
+
 def pair_key(a, b):
-    return f"{a['lat']:.5f},{a['lon']:.5f}>{b['lat']:.5f},{b['lon']:.5f}"
+    return f"{spot_key(a)}>{spot_key(b)}"
 
 
 def migrate(con):
@@ -189,11 +221,31 @@ def leg_for(con, a, b):
     return {"key": f"{a['id']}>{b['id']}", "from": a["id"], "km": round(km, 1), "minutes": round(minutes), "source": "routed"}
 
 
+def street_for(con, p):
+    key = spot_key(p)
+    row = con.execute("SELECT street FROM places WHERE spot=?", (key,)).fetchone()
+    if row:
+        return row["street"]
+    if key in _no_street:
+        return None
+    try:
+        street = reverse(p)
+    except (urllib.error.URLError, TimeoutError, ValueError):
+        street = None
+    if not street:
+        _no_street.add(key)
+        return None
+    con.execute("INSERT OR REPLACE INTO places VALUES(?,?)", (key, street))
+    return street
+
+
 def itinerary(con):
     days = []
     for d in con.execute("SELECT * FROM days ORDER BY day").fetchall():
         stops = stops_of(con, d["day"])
         places = [s for s in stops if s["kind"] == "place"]
+        for s in places:
+            s["street"] = street_for(con, s)
         legs = [leg_for(con, places[i], places[i + 1]) for i in range(len(places) - 1)]
         days.append({"day": d["day"], "title": d["title"], "stops": stops, "legs": legs})
     con.commit()
@@ -251,6 +303,8 @@ def add_stop(con, body):
                 (secrets.token_hex(4), day, pos, "place", name, body.get("address"), new["lat"], new["lon"]))
     for a, b, (minutes, km) in legs:
         con.execute("INSERT OR REPLACE INTO legs VALUES(?,?,?,?)", (pair_key(a, b), round(km, 1), round(minutes), "routed"))
+    if body.get("street"):
+        con.execute("INSERT OR IGNORE INTO places VALUES(?,?)", (spot_key(new), body["street"]))
     renumber(con, day)
 
 
@@ -259,7 +313,7 @@ def remove_stop(con, sid):
     if not row:
         return
     con.execute("DELETE FROM stops WHERE id=?", (sid,))
-    con.execute("DELETE FROM edits WHERE kind IN ('dwell','notes','before') AND key=?", (sid,))
+    con.execute("DELETE FROM edits WHERE kind IN ('dwell','notes','before','arrive') AND key=?", (sid,))
     con.execute("DELETE FROM edits WHERE kind='drive' AND (key LIKE ? OR key LIKE ?)", (sid + ">%", "%>" + sid))
     renumber(con, row["day"])
 

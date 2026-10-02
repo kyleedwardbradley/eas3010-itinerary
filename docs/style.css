@@ -112,5 +112,12 @@ footer button{font:13px var(--body);color:var(--ink);background:var(--sheet);bor
 .readonly .ctl,.readonly .addstop,.readonly footer button,.readonly .reset,.readonly .legend span:nth-child(2),.readonly .legend span:nth-child(3){display:none}
 .readonly .note{border:none;resize:none;padding-inline:0;color:var(--muted)}
 .readonly .note:placeholder-shown{display:none}
-.readonly input.t{border-color:transparent;background:transparent;pointer-events:none}
+.readonly input.t:not([data-arrive]){border-color:transparent;background:transparent;pointer-events:none}
 .readonly .chip.goog{display:none}
+
+/* arrival times */
+input.t.clk{text-align:left}
+input.t.clk.set{border-color:var(--accent);color:var(--accent)}
+.arrctl{display:flex;flex-wrap:wrap;gap:2px 8px;margin-top:2px}
+.arrctl button{font:12px var(--body);color:var(--muted);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0}
+.arrctl .unarr{color:var(--accent)}

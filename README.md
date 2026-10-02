@@ -9,12 +9,15 @@ local SQLite database.
 
     python3 server.py
 
-Then open http://localhost:8010. Python 3.8 or later, standard library only.
+Then open http://localhost:8010. Python 3.9 or later, standard library only.
 Use `--port` for a different port.
 
 ## Editing
 
 - **Leave at**: each day's departure time (`8`, `830`, `8:30`, `3:30pm`).
+- **Arrival**: type the time you actually reached a stop, or tap *now*. The
+  times after it follow from it; *plan* puts the planned time back. On the
+  published page these times stay in the viewer's browser.
 - **At stop**: time spent at a stop (`45`, `1:15`, `1h 15m`). Defaults to 30 min.
 - **Drive**: type over a leg's routed time to replace it; *use OSM* puts it back.
 - **Notes**: free text per stop, saved as you type.
@@ -28,9 +31,13 @@ Use `--port` for a different port.
   only after Valhalla has worked out the drive to it from the stop before and
   on to the stop after; if it can't, nothing changes.
 
+Each place shows the street address nearest its coordinates, looked up once
+with Nominatim's reverse geocoder. For field sites this is the closest
+address, not necessarily the site's own.
+
 Everything lives in `data/itinerary.sqlite` (not committed): the stops, one
-row per edit, and every leg time fetched so far, cached by its end
-coordinates. Delete the file to start over from `data/itinerary.json`. When an update
+row per edit, every leg time fetched so far, cached by its end
+coordinates, and each place's street address. Delete the file to start over from `data/itinerary.json`. When an update
 changes the database layout, the server converts it on start and keeps a
 dated copy of the old file next to it. If the page says the server is out of
 date, restart `server.py`.
@@ -57,4 +64,4 @@ After editing locally, update it with:
     python3 tools/publish.py --push
 
 That copies the page into `docs/` with the current stops, times and notes in
-`docs/snapshot.json`, commits `docs/` and pushes. Notes are published too.
+`docs/snapshot.json`, commits `docs/` and pushes. Notes and arrival times are published too.
