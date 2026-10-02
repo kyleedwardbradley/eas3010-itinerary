@@ -37,7 +37,8 @@ Use `--port` for a different port.
 
 Each place shows the street address nearest its coordinates, looked up once
 with Nominatim's reverse geocoder. For field sites this is the closest
-address, not necessarily the site's own.
+address, not necessarily the site's own. *copy* puts it on the clipboard
+to paste into another map app.
 
 Everything lives in `data/itinerary.sqlite` (not committed): the stops, one
 row per edit, every leg time fetched so far, cached by its end

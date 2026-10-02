@@ -156,7 +156,7 @@ function render() {
       const dwellCell = first || last ? `<span class="endtag">${first ? "start" : "end of day"}</span>`
         : `<label class="dwell" for="dw-${s.id}">at stop <input class="t" id="dw-${s.id}" data-dwell="${s.id}" value="${fmt(dwell)}" aria-label="Time at ${esc(s.name)}"></label>`;
       rows += `<li class="stop">${timeCell}<div><div class="namerow"><div class="name"><a href="${placeUrl(s)}" target="_blank" rel="noopener">${esc(s.name)}</a></div>${stopControls(s, i, n)}</div>
-        ${s.street ? `<div class="addr">${esc(s.street)}</div>` : ""}
+        ${s.street ? `<div class="addr">${esc(s.street)} <button type="button" class="copy" data-copy="${esc(s.street)}" aria-label="Copy the address of ${esc(s.name)}">copy</button></div>` : ""}
         <textarea class="note" id="nt-${s.id}" data-note="${s.id}" rows="1" placeholder="Notes">${esc(state.notes[s.id] || "")}</textarea></div>${dwellCell}</li>`;
       t = dep;
       const leg = legFrom[s.id];
@@ -281,6 +281,22 @@ let SNAP = {start: {}, arrive: {}};
 function localTimes(kind) {
   try { return JSON.parse(localStorage.getItem(STORE[kind])) || {}; } catch { return {}; }
 }
+async function copyText(b, text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // older browsers: copy from a hidden text box
+    const box = Object.assign(document.createElement("textarea"), {value: text});
+    box.style.cssText = "position:fixed;opacity:0";
+    document.body.append(box); box.select();
+    const ok = document.execCommand("copy");
+    box.remove();
+    if (!ok) { b.textContent = "can't copy"; return; }
+  }
+  b.textContent = "copied";
+  setTimeout(() => { b.textContent = "copy"; }, 1500);
+}
+
 // "now" means nothing later in the day has happened yet, so arrival times
 // recorded after that point are stale. id null: from the day's start.
 function clearAfter(id, dayNum) {
@@ -343,6 +359,7 @@ document.addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b) return;
   const ds = b.dataset;
   if (ds.unset != null) { delete state.drive[ds.unset]; render(); unset("drive", ds.unset); }
+  else if (ds.copy != null) copyText(b, ds.copy);
   else if (ds.now != null) { clearAfter(ds.now); setTime("arrive", ds.now, nowClock()); }
   else if (ds.unarrive != null) setTime("arrive", ds.unarrive, null);
   else if (ds.nowStart != null) { clearAfter(null, +ds.nowStart); setTime("start", ds.nowStart, nowClock()); }
