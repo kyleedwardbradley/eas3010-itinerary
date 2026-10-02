@@ -1,5 +1,5 @@
 {
- "published": "2026-10-02 14:10",
+ "published": "2026-10-02 14:16",
  "itinerary": {
   "version": 4,
   "days": [
@@ -281,6 +281,12 @@
   ]
  },
  "edits": {
+  "arrive": {},
+  "notes": {
+   "6cbf647f": "With lunch",
+   "2f4ff3ef": "Tours depart every hour on the hour"
+  },
+  "before": {},
   "dwell": {
    "7bdd2592": 60,
    "64a4814b": 90,
@@ -291,15 +297,9 @@
    "95c98823": 105,
    "2f4ff3ef": 120
   },
-  "arrive": {},
-  "notes": {
-   "6cbf647f": "With lunch",
-   "2f4ff3ef": "Tours depart every hour on the hour"
-  },
-  "before": {},
+  "drive": {},
   "start": {
    "0": "15:30"
-  },
-  "drive": {}
+  }
  }
 }
