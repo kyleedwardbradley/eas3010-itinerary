@@ -38,9 +38,10 @@ function parseDur(s) {
 }
 
 const ll = s => `${s.lat},${s.lon}`;
-const dirUrl = (a, b) => `https://www.google.com/maps/dir/?api=1&origin=${ll(a)}&destination=${ll(b)}&travelmode=driving`;
+const dirUrl = (a, b) => `https://maps.apple.com/?saddr=${ll(a)}&daddr=${ll(b)}&dirflg=d`;
+// Apple Maps links take one destination, so a whole day's multi-stop route stays on Google.
 const dayUrl = st => `https://www.google.com/maps/dir/${st.map(ll).join("/")}`;
-const placeUrl = s => `https://www.google.com/maps/search/?api=1&query=${ll(s)}`;
+const placeUrl = s => `https://maps.apple.com/?ll=${ll(s)}&q=${encodeURIComponent(s.name)}`;
 
 function stopControls(s, i, n) {
   if (ui.removing === s.id) {
@@ -161,7 +162,7 @@ function render() {
     const km = day.legs.reduce((a, l) => a + (l.km || 0), 0);
     return `<section class="day" aria-labelledby="h-${d}">
       <div class="dayhead"><div><h2 id="h-${d}">${esc(day.title)}</h2>
-        <div class="route">${places.length} stop${places.length === 1 ? "" : "s"}${n > places.length ? ` + ${n - places.length} rest` : ""} · ${km.toFixed(0)} km${places.length > 1 ? ` · <a href="${dayUrl(places)}" target="_blank" rel="noopener">Whole day on a map ↗</a>` : ""}</div></div>
+        <div class="route">${places.length} stop${places.length === 1 ? "" : "s"}${n > places.length ? ` + ${n - places.length} rest` : ""} · ${km.toFixed(0)} km${places.length > 1 ? ` · <a href="${dayUrl(places)}" target="_blank" rel="noopener">Whole day in Google Maps ↗</a>` : ""}</div></div>
         <label class="startbox" for="st-${d}">Leave at <input class="t" id="st-${d}" data-start="${d}" value="${start}" aria-label="${esc(day.title)} departure time"></label></div>
       <div class="totals"><span>Driving <b>${fmt(drive)}</b>${noRoute ? ` <span class="chip warn">${noRoute} leg${noRoute > 1 ? "s" : ""} missing</span>` : ""}</span><span>At stops <b>${fmt(dwellTot)}</b></span><span>Back / arrive <b>${clock(t)}</b></span><span>Day length <b>${fmt(t - toMin(start))}</b></span></div>
       <ol class="plan">${rows || `<li class="stop"><span class="endtag">No stops</span></li>`}</ol>
