@@ -1,7 +1,7 @@
 {
- "published": "2026-09-29 10:45",
+ "published": "2026-10-02 14:04",
  "itinerary": {
-  "version": 3,
+  "version": 4,
   "days": [
    {
     "day": 0,
@@ -15,7 +15,8 @@
       "name": "Snee Hall",
       "address": null,
       "lat": 42.4437223,
-      "lon": -76.4853336
+      "lon": -76.4853336,
+      "street": "514 College Avenue, Ithaca, NY 14853"
      },
      {
       "id": "6f308e6f",
@@ -35,7 +36,8 @@
       "name": "Brauer Geologic Field Station",
       "address": null,
       "lat": 42.5424194,
-      "lon": -73.8662068
+      "lon": -73.8662068,
+      "street": "570 Old Quarry Road, South Bethlehem, NY 12158"
      }
     ],
     "legs": [
@@ -60,7 +62,8 @@
       "name": "Brauer Geologic Field Station",
       "address": null,
       "lat": 42.5424194,
-      "lon": -73.8662068
+      "lon": -73.8662068,
+      "street": "570 Old Quarry Road, South Bethlehem, NY 12158"
      },
      {
       "id": "7bdd2592",
@@ -70,7 +73,8 @@
       "name": "Lester Park stromatolites",
       "address": null,
       "lat": 43.095188,
-      "lon": -73.8469662
+      "lon": -73.8469662,
+      "street": "50 Middle Grove Road, South Greenfield, NY 12833"
      },
      {
       "id": "64a4814b",
@@ -80,7 +84,8 @@
       "name": "Saratoga Spa State Park",
       "address": null,
       "lat": 43.0540852,
-      "lon": -73.7979417
+      "lon": -73.7979417,
+      "street": "Roosevelt Drive, Saratoga Springs, NY 12866"
      },
      {
       "id": "6cbf647f",
@@ -90,7 +95,8 @@
       "name": "Stark's Knob",
       "address": null,
       "lat": 43.1181213,
-      "lon": -73.5866957
+      "lon": -73.5866957,
+      "street": "108 Starks Knob Road, Schuylerville, NY 12871"
      },
      {
       "id": "90ec562b",
@@ -100,7 +106,8 @@
       "name": "Albany clay",
       "address": null,
       "lat": 42.82502,
-      "lon": -73.6606266
+      "lon": -73.6606266,
+      "street": "2135 River Road, Speigletown, NY 12121"
      },
      {
       "id": "d1bccb2f",
@@ -110,7 +117,8 @@
       "name": "Cohoes Falls overlook park",
       "address": null,
       "lat": 42.7852851,
-      "lon": -73.7110193
+      "lon": -73.7110193,
+      "street": "248 North Mohawk Street, Cohoes, NY 12047"
      },
      {
       "id": "a5ac2444",
@@ -120,7 +128,8 @@
       "name": "Brauer Geologic Field Station",
       "address": null,
       "lat": 42.5424194,
-      "lon": -73.8662068
+      "lon": -73.8662068,
+      "street": "570 Old Quarry Road, South Bethlehem, NY 12158"
      }
     ],
     "legs": [
@@ -180,7 +189,8 @@
       "name": "Brauer Geologic Field Station",
       "address": null,
       "lat": 42.5424194,
-      "lon": -73.8662068
+      "lon": -73.8662068,
+      "street": "570 Old Quarry Road, South Bethlehem, NY 12158"
      },
      {
       "id": "5eaff051",
@@ -190,7 +200,8 @@
       "name": "Abandoned quarry",
       "address": null,
       "lat": 42.5580398,
-      "lon": -73.8624161
+      "lon": -73.8624161,
+      "street": "355 Old Quarry Road, South Bethlehem, NY 12067"
      },
      {
       "id": "95c98823",
@@ -200,7 +211,8 @@
       "name": "Indian Ladder Trail",
       "address": null,
       "lat": 42.6549251,
-      "lon": -74.0179096
+      "lon": -74.0179096,
+      "street": "Indian Ladder, New Scotland, NY 12059"
      },
      {
       "id": "2f4ff3ef",
@@ -210,7 +222,8 @@
       "name": "Secret Caverns",
       "address": null,
       "lat": 42.7094777,
-      "lon": -74.3917474
+      "lon": -74.3917474,
+      "street": "671 Caverns Road, Cobleskill, NY 12092"
      },
      {
       "id": "dd617033",
@@ -230,7 +243,8 @@
       "name": "Snee Hall",
       "address": null,
       "lat": 42.4437223,
-      "lon": -76.4853336
+      "lon": -76.4853336,
+      "street": "514 College Avenue, Ithaca, NY 14853"
      }
     ],
     "legs": [
@@ -267,9 +281,9 @@
   ]
  },
  "edits": {
-  "before": {},
-  "start": {
-   "0": "15:30"
+  "notes": {
+   "6cbf647f": "With lunch",
+   "2f4ff3ef": "Tours depart every hour on the hour"
   },
   "dwell": {
    "7bdd2592": 60,
@@ -281,10 +295,11 @@
    "95c98823": 105,
    "2f4ff3ef": 120
   },
-  "drive": {},
-  "notes": {
-   "6cbf647f": "With lunch",
-   "2f4ff3ef": "Tours depart every hour on the hour"
-  }
+  "before": {},
+  "arrive": {},
+  "start": {
+   "0": "15:30"
+  },
+  "drive": {}
  }
 }
