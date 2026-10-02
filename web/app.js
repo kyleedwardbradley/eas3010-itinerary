@@ -281,6 +281,16 @@ let SNAP = {start: {}, arrive: {}};
 function localTimes(kind) {
   try { return JSON.parse(localStorage.getItem(STORE[kind])) || {}; } catch { return {}; }
 }
+// "now" means nothing later in the day has happened yet, so arrival times
+// recorded after that point are stale. id null: from the day's start.
+function clearAfter(id, dayNum) {
+  const day = DAYS.find(d => id == null ? d.day === dayNum : d.stops.some(s => s.id === id));
+  const ids = day.stops.map(s => s.id);
+  for (const later of ids.slice(id == null ? 0 : ids.indexOf(id) + 1)) {
+    if (state.arrive[later] != null) setTime("arrive", later, null);
+  }
+}
+
 function setTime(kind, key, v) {
   const back = READONLY ? SNAP[kind][key] : undefined;
   if (v != null) state[kind][key] = v; else if (back != null) state[kind][key] = back; else delete state[kind][key];
@@ -333,9 +343,9 @@ document.addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b) return;
   const ds = b.dataset;
   if (ds.unset != null) { delete state.drive[ds.unset]; render(); unset("drive", ds.unset); }
-  else if (ds.now != null) setTime("arrive", ds.now, nowClock());
+  else if (ds.now != null) { clearAfter(ds.now); setTime("arrive", ds.now, nowClock()); }
   else if (ds.unarrive != null) setTime("arrive", ds.unarrive, null);
-  else if (ds.nowStart != null) setTime("start", ds.nowStart, nowClock());
+  else if (ds.nowStart != null) { clearAfter(null, +ds.nowStart); setTime("start", ds.nowStart, nowClock()); }
   else if (ds.unstart != null) setTime("start", ds.unstart, null);
   else if (ds.move != null) stopAction("POST", `/api/stops/${ds.move}/move`, {step: +ds.step}, "Checking drive times…");
   else if (ds.remove != null) { ui.removing = ds.remove; render(); }

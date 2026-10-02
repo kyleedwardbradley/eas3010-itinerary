@@ -17,7 +17,10 @@ Use `--port` for a different port.
 - **Leave at**: each day's departure time (`8`, `830`, `8:30`, `3:30pm`), or
   tap *now*.
 - **Arrival**: type the time you actually reached a stop, or tap *now*. The
-  times after it follow from it; *plan* puts the planned time back. On the
+  times after it follow from it; *plan* puts the planned time back. A
+  recorded arrival holds its place when earlier times change. Tapping *now*
+  clears the arrivals recorded after that point, since they are still to
+  come. On the
   published page these times, and Leave at, stay in the viewer's browser.
 - **At stop**: time spent at a stop (`45`, `1:15`, `1h 15m`). Defaults to 30 min.
 - **Drive**: type over a leg's routed time to replace it; *use OSM* puts it back.
