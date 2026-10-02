@@ -35,7 +35,7 @@ h1{font:700 40px/1 var(--display);margin:0;letter-spacing:.01em;text-wrap:balanc
 .dayhead h2{font:700 30px/1 var(--display);margin:0}
 .dayhead .route{font-size:13px;color:var(--muted);margin-top:4px}
 .dayhead .route a{color:var(--accent)}
-.startbox{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.startbox{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:13px;color:var(--muted)}
 .totals{display:flex;flex-wrap:wrap;gap:6px 18px;padding:10px 18px;background:var(--accent-soft);font:13px var(--mono);font-variant-numeric:tabular-nums}
 .totals b{font-weight:600}
 
@@ -112,7 +112,7 @@ footer button{font:13px var(--body);color:var(--ink);background:var(--sheet);bor
 .readonly .ctl,.readonly .addstop,.readonly footer button,.readonly .reset,.readonly .legend span:nth-child(2),.readonly .legend span:nth-child(3){display:none}
 .readonly .note{border:none;resize:none;padding-inline:0;color:var(--muted)}
 .readonly .note:placeholder-shown{display:none}
-.readonly input.t:not([data-arrive]){border-color:transparent;background:transparent;pointer-events:none}
+.readonly input.t:not([data-arrive]):not([data-start]){border-color:transparent;background:transparent;pointer-events:none}
 .readonly .chip.goog{display:none}
 
 /* arrival times */

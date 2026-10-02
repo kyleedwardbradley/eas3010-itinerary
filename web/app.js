@@ -6,7 +6,8 @@
 // Rest stops have no location: they split the drive between the places either
 // side. "before" edits hold the driving minutes since the previous stop.
 // "arrive" edits hold the time the group actually reached a stop; later times
-// follow from it. On the published copy they stay in the viewer's browser.
+// follow from it. On the published copy these and the day's start stay in the
+// viewer's browser.
 
 const API_VERSION = 4;  // must match server.py
 const DEFAULT_DWELL = 30, DEFAULT_REST = 15, DEFAULT_START = "08:00";
@@ -180,7 +181,9 @@ function render() {
     return `<section class="day" aria-labelledby="h-${d}">
       <div class="dayhead"><div><h2 id="h-${d}">${esc(day.title)}</h2>
         <div class="route">${places.length} stop${places.length === 1 ? "" : "s"}${n > places.length ? ` + ${n - places.length} rest` : ""} · ${km.toFixed(0)} km${places.length > 1 ? ` · <a href="${dayUrl(places)}" target="_blank" rel="noopener">Whole day in Google Maps ↗</a>` : ""}</div></div>
-        <label class="startbox" for="st-${d}">Leave at <input class="t" id="st-${d}" data-start="${d}" value="${start}" aria-label="${esc(day.title)} departure time"></label></div>
+        <div class="startbox"><label for="st-${d}">Leave at</label> <input class="t" id="st-${d}" data-start="${d}" value="${start}" aria-label="${esc(day.title)} departure time">
+          <span class="arrctl"><button type="button" class="now" data-now-start="${d}" title="Leaving now">now</button>${READONLY && localTimes("start")[d] != null
+            ? `<button type="button" class="unarr" data-unstart="${d}" title="Back to the planned time">plan ${SNAP.start[d] || DEFAULT_START}</button>` : ""}</span></div></div>
       <div class="totals"><span>Driving <b>${fmt(drive)}</b>${noRoute ? ` <span class="chip warn">${noRoute} leg${noRoute > 1 ? "s" : ""} missing</span>` : ""}</span><span>At stops <b>${fmt(dwellTot)}</b></span><span>Back / arrive <b>${clock(t)}</b></span><span>Day length <b>${fmt(t - toMin(start))}</b></span></div>
       <ol class="plan">${rows || `<li class="stop"><span class="endtag">No stops</span></li>`}</ol>
       ${addForm(day)}</section>`;
@@ -265,26 +268,30 @@ document.addEventListener("change", e => {
     return;
   }
   el.classList.remove("bad"); el.title = "";
-  if (kind === "arrive") return setArrive(key, v);
+  if (kind === "arrive" || kind === "start") return setTime(kind, key, v);
   state[kind][key] = v;
   render();
   save(kind, key, v);
 });
 
-// the published copy keeps arrival times in this browser only
-const ARRIVE_STORE = "eas3010-arrive";
-function localArrive() {
-  try { return JSON.parse(localStorage.getItem(ARRIVE_STORE)) || {}; } catch { return {}; }
+// the published copy keeps start and arrival times in this browser only;
+// clearing one goes back to the published value (SNAP)
+const STORE = {arrive: "eas3010-arrive", start: "eas3010-start"};
+let SNAP = {start: {}, arrive: {}};
+function localTimes(kind) {
+  try { return JSON.parse(localStorage.getItem(STORE[kind])) || {}; } catch { return {}; }
 }
-function setArrive(key, v) {
-  if (v == null) delete state.arrive[key]; else state.arrive[key] = v;
-  render();
+function setTime(kind, key, v) {
+  const back = READONLY ? SNAP[kind][key] : undefined;
+  if (v != null) state[kind][key] = v; else if (back != null) state[kind][key] = back; else delete state[kind][key];
   if (READONLY) {
-    const mine = localArrive();
+    const mine = localTimes(kind);
     if (v == null) delete mine[key]; else mine[key] = v;
-    try { localStorage.setItem(ARRIVE_STORE, JSON.stringify(mine)); } catch {}
-  } else if (v == null) unset("arrive", key);
-  else save("arrive", key, v);
+    try { localStorage.setItem(STORE[kind], JSON.stringify(mine)); } catch {}
+  }
+  render();
+  if (READONLY) return;
+  if (v == null) unset(kind, key); else save(kind, key, v);
 }
 
 // notes save after a pause in typing; the add-stop fields just track their text
@@ -326,8 +333,10 @@ document.addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b) return;
   const ds = b.dataset;
   if (ds.unset != null) { delete state.drive[ds.unset]; render(); unset("drive", ds.unset); }
-  else if (ds.now != null) setArrive(ds.now, nowClock());
-  else if (ds.unarrive != null) setArrive(ds.unarrive, null);
+  else if (ds.now != null) setTime("arrive", ds.now, nowClock());
+  else if (ds.unarrive != null) setTime("arrive", ds.unarrive, null);
+  else if (ds.nowStart != null) setTime("start", ds.nowStart, nowClock());
+  else if (ds.unstart != null) setTime("start", ds.unstart, null);
   else if (ds.move != null) stopAction("POST", `/api/stops/${ds.move}/move`, {step: +ds.step}, "Checking drive times…");
   else if (ds.remove != null) { ui.removing = ds.remove; render(); }
   else if (ds.removeNo != null) { ui.removing = null; render(); }
@@ -383,7 +392,7 @@ let READONLY = false;
 
 function lockSnapshot() {
   document.body.classList.add("readonly");
-  document.querySelectorAll("#days input:not([data-arrive]), #days textarea").forEach(el => { el.readOnly = true; el.tabIndex = -1; });
+  document.querySelectorAll("#days input:not([data-arrive]):not([data-start]), #days textarea").forEach(el => { el.readOnly = true; el.tabIndex = -1; });
 }
 
 (async () => {
@@ -393,7 +402,9 @@ function lockSnapshot() {
       READONLY = true;
       DAYS = snap.itinerary.days;
       state = {...EMPTY(), ...snap.edits};
-      state.arrive = {...state.arrive, ...localArrive()};
+      SNAP = {start: {...state.start}, arrive: {...state.arrive}};
+      state.start = {...state.start, ...localTimes("start")};
+      state.arrive = {...state.arrive, ...localTimes("arrive")};
       document.querySelector(".sub").textContent = "Arrival and departure times follow from each day's start time, the drive times, and how long we stay at each stop. Drive times are OpenStreetMap routing estimates with no traffic, so allow extra on long highway legs.";
       render();
       setStatus(`Plan as of ${snap.published}${navigator.onLine ? "" : " · offline copy"}`);
