@@ -41,7 +41,7 @@ def main():
         }
 
     DOCS.mkdir(exist_ok=True)
-    for name in ("index.html", "app.js", "style.css"):
+    for name in ("index.html", "app.js", "style.css", "sw.js"):
         shutil.copy2(server.WEB / name, DOCS / name)
     (DOCS / "snapshot.json").write_text(json.dumps(snapshot, indent=1) + "\n")
     (DOCS / ".nojekyll").touch()

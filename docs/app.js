@@ -396,7 +396,8 @@ function lockSnapshot() {
       state.arrive = {...state.arrive, ...localArrive()};
       document.querySelector(".sub").textContent = "Arrival and departure times follow from each day's start time, the drive times, and how long we stay at each stop. Drive times are OpenStreetMap routing estimates with no traffic, so allow extra on long highway legs.";
       render();
-      setStatus(`Plan as of ${snap.published}`);
+      setStatus(`Plan as of ${snap.published}${navigator.onLine ? "" : " · offline copy"}`);
+      navigator.serviceWorker?.register("sw.js").catch(() => {});
       return;
     }
     const [it, edits] = await Promise.all([fetch("/api/itinerary").then(r => r.json()), fetch("/api/edits").then(r => r.json())]);
@@ -406,6 +407,9 @@ function lockSnapshot() {
     render();
     setStatus("Saved");
   } catch (e) {
-    setStatus(e.message.includes("older version") ? e.message : "Couldn't load the itinerary. Start it with: python3 server.py");
+    const local = ["localhost", "127.0.0.1"].includes(location.hostname);
+    setStatus(e.message.includes("older version") ? e.message
+      : local ? "Couldn't load the itinerary. Start it with: python3 server.py"
+      : "Couldn't load the plan. Open it once with a signal so it's saved for offline use.");
   }
 })();
